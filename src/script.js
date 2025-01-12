@@ -87,7 +87,7 @@ async function handleChoice(choice) {
             max_tokens: 150
         }, {
             headers: {
-                'Authorization': 'Bearer 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',
+                'Authorization': 'Bearer hehe, cant get it lol',
                 'Content-Type': 'application/json',
             }
         });
