@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corsair's Choice</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Press Start 2P', sans-serif;
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(1deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -1000px 0; }
+            100% { background-position: 1000px 0; }
+        }
+        
+        .float {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .slide-up {
+            transition: transform 0.3s ease-out;
+        }
+        
+        .slide-up.hidden {
+            transform: translateY(100%);
+        }
+        
+        .choice-button {
+            transition: all 0.3s ease;
+            background-size: 200% 100%;
+            background-position: right bottom;
+        }
+        
+        .choice-button:hover {
+            background-position: left bottom;
+        }
+        
+        .pixel-corners {
+            clip-path: polygon(
+                0 4px, 4px 4px, 4px 0,
+                calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px,
+                100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%,
+                4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px)
+            );
+        }
+        
+        .shimmer {
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.2),
+                transparent
+            );
+            background-size: 1000px 100%;
+            animation: shimmer 2s infinite linear;
+        }
+        
+        .pixel-border {
+            box-shadow: 
+                0 0 0 2px #000,
+                inset 0 0 0 2px #000;
+        }
+        
+        .water-bg {
+            background: repeating-linear-gradient(
+                45deg,
+                rgba(0, 0, 128, 0.1),
+                rgba(0, 0, 128, 0.1) 10px,
+                rgba(0, 0, 160, 0.1) 10px,
+                rgba(0, 0, 160, 0.1) 20px
+            );
+        }
+        
+        .stats-bar {
+            height: 20px;
+            background: #444;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stats-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-start p-4 bg-gradient-to-b from-indigo-900 via-indigo-800 to-indigo-900">
+    <div class="fixed inset-0 water-bg opacity-30 z-0"></div>
+    
+    <div class="w-full max-w-2xl mb-4 bg-amber-100 p-4 rounded-lg pixel-corners pixel-border">
+        <div class="grid grid-cols-3 gap-4 text-xs">
+            <div>
+                <div class="mb-1 text-amber-800">CREW MORALE</div>
+                <div class="stats-bar pixel-corners">
+                    <div id="morale-bar" class="stats-fill bg-green-500" style="width: 100%;"></div>
+                </div>
+            </div>
+            <div>
+                <div class="mb-1 text-amber-800">SHIP CONDITION</div>
+                <div class="stats-bar pixel-corners">
+                    <div id="ship-bar" class="stats-fill bg-blue-500" style="width: 100%;"></div>
+                </div>
+            </div>
+            <div>
+                <div class="mb-1 text-amber-800">GOLD: <span id="gold-count">100</span></div>
+                <div class="stats-bar pixel-corners bg-amber-300"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-container" class="w-full max-w-2xl bg-amber-100 p-6 rounded-lg pixel-corners pixel-border relative z-20 float">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center space-x-4">
+                <h1 class="text-2xl text-amber-800 tracking-wide cursor-pointer" id="game-title">Corsair's Choice</h1>
+            </div>
+            <div class="flex space-x-2">
+                <button id="show-goal" class="bg-emerald-600 text-white px-3 py-2 rounded pixel-corners hover:bg-emerald-700 text-xs">
+                    📜 Log
+                </button>
+            </div>
+        </div>
+        
+        <div id="scenario-card" class="bg-amber-200 pixel-corners pixel-border p-6 mb-6 relative overflow-hidden">
+            <div class="shimmer absolute inset-0"></div>
+            <p id="scenario-text" class="text-amber-900 leading-relaxed relative z-10 text-sm"></p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button id="choice-a" class="choice-button bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-4 py-6 rounded pixel-corners text-xs"></button>
+            <button id="choice-b" class="choice-button bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-4 py-6 rounded pixel-corners text-xs"></button>
+        </div>
+        
+        <div id="loading" class="mt-4  hidden">
+            <div class="flex items-center justify-center space-x-2">
+                <div class="w-2 h-2 bg-amber-700 rounded-full animate-bounce"></div>
+                <div class="w-2 h-2 bg-amber-700 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                <div class="w-2 h-2 bg-amber-700 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+            </div>
+        </div>
+        <div class="text-center mt-6 text-amber-900">
+            <p class="text-sm">made by <a class="text-pink-500" href="https://github.com/divpreeet">divpreet</a> for <a class="text-pink-500" href="https://highseas.hackclub.com">highseas</a></p>
+        </div>
+    </div>
+
+    <div id="goal-card" class="fixed bottom-0 left-0 right-0 bg-amber-100 border-t-4 border-amber-700 p-6 slide-up hidden z-30 pixel-border">
+        <div class="max-w-2xl mx-auto">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl text-amber-800 mb-2">Captain's Log</h2>
+                <button id="close-goal" class="bg-emerald-600 text-white px-4 py-2 rounded pixel-corners hover:bg-emerald-700 text-xs">Close</button>
+            </div>
+            <p class="text-amber-900 mb-4 text-xs leading-relaxed">Ahoy, matey! Yer goal be to navigate the treacherous waters of the Caribbean, facing challenges and making choices as ye seek fame, fortune, and adventure. There be no end to this tale, so sail on 'til yer heart's choice!</p>
+        </div>
+    </div>
+
+    <script type=module src="/src/script.js"></script>
+</body>
+</html>
