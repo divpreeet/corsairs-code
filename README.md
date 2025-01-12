@@ -17,4 +17,4 @@
 --- 
 
 ## Play it
-[Corsairs Code]()
+[Corsairs Code](https://corsairs-choice.vercel.app)
